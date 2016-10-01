@@ -1,0 +1,385 @@
+<html ng-app = "profile">
+<head>
+	<link rel="shortcut icon" href="http://logos-download.com/wp-content/uploads/2016/02/Twitter_logo_bird_transparent_png.png" />
+	<title>Twitter Profile</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+	<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+	<script src = "http://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+	<script>
+		
+		var profile = angular.module('profile', []);
+		profile.controller('profileCtrl', function($scope,$http){
+			var firstNameRecv = "";
+			$http({
+				method : 'POST',
+				url : '/profileInfo'
+			}).success(function(data){
+					firstNameRecv = String(data.firstName);
+					document.getElementById("USERName").innerHTML = firstNameRecv.bold();
+					var boldedFirstName = firstNameRecv.bold();
+					document.getElementById("USERNameBelowProfilePicture").innerHTML = boldedFirstName.fontsize(5);
+					$scope.USERNameBesidePictureInTweetBox = firstNameRecv;
+					var DOB = String(data.month) + " " + String(data.date) + ", " + String(data.year);
+					document.getElementById("DATEOfBirth").innerHTML = " Born On " + String(DOB);
+					var joinedDate = "";
+					for(var i = 0; i <= 9; i++){
+						joinedDate += data.joinedDate[i];
+					}
+					document.getElementById("JoinedDate").innerHTML = " Joined On " + String(joinedDate) + "(y-m-d)";
+					document.getElementById("NumberOfPeopleFollowing").innerHTML = data.rowSizeOfFollowingTable;
+					document.getElementById("NumberOfPeopleFollowers").innerHTML = data.rowSizeOfFollowersTable;
+				});
+
+			$http({
+				method : 'POST',
+				url : '/getAllUsernamesInDB'
+			}).success(function(data){
+				$scope.recvdAllUsernamesInDB = data.rows;
+			});
+
+			$scope.TWEETTextArea = "";
+				$http({	
+					method : 'POST',
+					url : '/retreiveTweetFromDB'
+				}).success(function(data){
+					var rows = [];
+					for(var i = 0; i < data.rowSize; i++){
+						rows[i] = decodeURIComponent(data.rows[i].tweet);
+						data.rows[i].tweet = rows[i];
+						
+					}
+					$scope.recvdTweets = JSON.parse(JSON.stringify(data.rows));
+				});
+
+			$scope.saveTweetInDB = function(TWEETTextArea){
+
+				$http({
+					method : 'POST',
+					url : '/tweetStoreInDB',
+					data : {
+						"tweetText" : escape(TWEETTextArea),
+						"firstName" : firstNameRecv
+					}
+				}).success(function(data){
+					if(data.status = "Success"){
+						console.log("Tweet store in DB Success");
+					}
+					else if (data.status = "Failed"){
+						console.log("Tweet Store In DB Failed");
+					}
+				});
+				$scope.TWEETTextArea = "";
+				$http({	
+					method : 'POST',
+					url : '/retreiveTweetFromDB'
+				}).success(function(data){
+					console.log("tweet is = " + JSON.stringify(data.rows));
+					console.log(decodeURIComponent(data.rows[0].tweet));
+					console.log("row length is = " + data.rowSize);
+					var rows = [];
+					for(var i = 0; i < data.rowSize; i++){
+						rows[i] = decodeURIComponent(data.rows[i].tweet);
+						data.rows[i].tweet = rows[i];
+						
+					}
+					console.log("rows after for loop is ***= " + JSON.stringify(data.rows[0].tweet));
+					$scope.recvdTweets = JSON.parse(JSON.stringify(data.rows));
+				});
+				window.location.reload();
+			}	
+
+			$scope.getTheUsernameToFollow = function(UsernameToFollow, usernameRow){
+				console.log("UsernameToFollow = " + UsernameToFollow);
+				$http({
+					method : 'POST',
+					url : '/addUsernameToFollowing',
+					data : {
+						"UsernameToFollow" : UsernameToFollow
+					}
+				}).success(function(data){
+					console.log("NumberOfPeopleFollowing = " + data.rowSizeOfFollowingTable);
+					document.getElementById("NumberOfPeopleFollowing").innerHTML = data.rowSizeOfFollowingTable;
+					usernameRow = "";
+					window.location.reload();
+
+				});
+
+			};
+
+			$scope.lookForHash = function(){
+				/*var hashWord = "";
+				console.log($scope.TWEETTextArea);
+				for(var i = 0; i < $scope.TWEETTextArea.length; i++){
+					if($scope.TWEETTextArea[i] == '#'){
+						console.log("Found #!");
+						for(var j = i; j < $scope.TWEETTextArea.length; j++){
+							hashWord += $scope.TWEETTextArea[j];
+							if($scope.TWEETTextArea[j] == " "){
+								console.log("hashWord = " + hashWord);
+								return 0;
+							}
+						}
+						
+					}
+				}*/
+			};
+		});
+	</script>
+	<style>
+		.modal {
+		    display: none; /* Hidden by default */
+		    position: fixed; /* Stay in place */
+		    z-index: 1; /* Sit on top */
+		    padding-top: 400px; /* Location of the box */
+		    left: 0;
+		    top: 0;
+		    width: 100%; /* Full width */
+		    height: 100%; /* Full height */
+		    overflow: auto; /* Enable scroll if needed */
+		    background-color: rgb(0,0,0); /* Fallback color */
+		    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+		}
+
+	/* Modal Content */
+	.modal-content {
+	    background-color: #fefefe;
+	    margin: auto;
+	    padding: 20px;
+	    border: 1px solid #888;
+	    width: 30%;
+	}
+
+	/* The Close Button */
+	.close {
+	    color: #aaaaaa;
+	    float: right;
+	    font-size: 28px;
+	    font-weight: bold;
+	}
+
+	.close:hover,
+	.close:focus {
+	    color: #000;
+	    text-decoration: none;
+	    cursor: pointer;
+	}
+
+	
+	.myButton {
+		-moz-box-shadow:inset 1px 1px 0px -26px #bbdaf7;
+		-webkit-box-shadow:inset 1px 1px 0px -26px #bbdaf7;
+		box-shadow:inset 0px 0px 0px -50px #bbdaf7;
+		background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #0084B4), color-stop(1, #99CDE1));
+		background:-moz-linear-gradient(top, #0084B4 5%, #99CDE1 100%);
+		background:-webkit-linear-gradient(top, #0084B4 5%, #99CDE1 100%);
+		background:-o-linear-gradient(top, #0084B4 5%, #99CDE1 100%);
+		background:-ms-linear-gradient(top, #0084B4 5%, #99CDE1 100%);
+		background:linear-gradient(to bottom, #0084B4 5%, #99CDE1 100%);
+		filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#0084B4', endColorstr='#99CDE1',GradientType=0);
+		background-color:#99CDE1;
+		-moz-border-radius:13px;
+		-webkit-border-radius:5px;
+		border-radius:6px;
+		display:inline-block;
+		cursor:pointer;
+		color:#ffffff;
+		font-size:15px;
+		font-weight:bold;
+		padding:8px 25px;
+		text-decoration:none;
+		text-shadow:0px 0px 0px #528ecc;
+	}
+	.myButton:hover {
+		background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #005e81), color-stop(1, #7fb4c7));
+		background:-moz-linear-gradient(top, #005e81 5%, #7fb4c7 100%);
+		background:-webkit-linear-gradient(top, #005e81 5%, #7fb4c7 100%);
+		background:-o-linear-gradient(top, #005e81 5%, #7fb4c7 100%);
+		background:-ms-linear-gradient(top, #005e81 5%, #7fb4c7 100%);
+		background:linear-gradient(to bottom, #005e81 5%, #7fb4c7 100%);
+		filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#005e81', endColorstr='#7fb4c7',GradientType=0);
+		background-color:#005e81;
+	}
+	.myButton:active {
+		position:relative;
+		top:1px;
+	}
+
+	</style>
+</head>	
+
+<body ng-controller = "profileCtrl">
+	<div id = "TopDivision" style = "background-color:#F5F8FA; width: 100%; height: 60px; border-radius:8px">
+		<nav class="navbar navbar-fixed-top" style = "background-color:#F5F8FA; opacity:0.9">
+			<div class="container-fluid">
+				<div style = "position:absolute; width: 100%; TOP:10px; LEFT:15%">
+					<div style = "position:absolute; TOP:-10px">
+						<ul class="nav navbar-nav">
+							<li class="active"><a href="#"><span class="glyphicon glyphicon-home"></span><b> Home</b></a></li>
+							<li class="active"><a href = "#"><span class="glyphicon glyphicon-flash"></span><b> Moments</b></a></li>
+							<li class="active"><a href = "#"><span class="glyphicon glyphicon-bell"></span> <b>Notifications</b></a></li>
+							<li class="active"><a href = "#"><span class="glyphicon glyphicon-envelope"></span> <b>Messages</b></a></li>
+						</ul>
+					</div>
+					<img src = "http://logos-download.com/wp-content/uploads/2016/02/Twitter_logo_bird_transparent_png.png" height = "20px" width = "25px" style = "position:absolute; TOP:8px ;LEFT:33%">
+					<div class = "col-xs-2" style = "position:absolute; RIGHT:41%">
+						<form role="form"> 
+						  <div class="form-group has-feedback">
+						    <input type="text" class="form-control" placeholder="Search Twitter" ng-model = "query" style = "border-radius:15px"/>
+						    <i class="form-control-feedback glyphicon glyphicon-search"></i>
+						  </div>
+						</form>
+					</div>
+
+					<ul class="nav navbar-nav navbar-right">
+							<div style = "position:absolute; RIGHT:38.1%">
+								<div class="dropdown">				
+								    <img src = "/Images/Profilepic.jpg" height = "35px" width = "38px" style = "border-radius:6px" role="button" data-toggle = "dropdown" class = "dropdown-toggle"><span class="caret"></span>
+								    <ul class="dropdown-menu">
+								      <li><a href="#"><p id = "USERName"></p><h6>View Profile</h6></a></li>
+								      <li class="divider"></li>
+								      <li><a href="/signUpSuccess">Log Out</a></li>
+								    </ul>			
+								</div>
+							</div>
+						<button href = "#" style = "position:absolute; TOP:-5px; RIGHT:31.5%" class = "myButton"><span class="glyphicon glyphicon-edit"></span> Tweet</button>
+					</ul>
+				</div>
+			</div>
+		</nav>	
+	</div>
+	<div id = "profilePicBG" style = " width: 100%; height: 200px; background-color:#0084B4"></div>
+	<nav class="navbar">
+		<div style = "position:absolute; width: 40%; TOP:-300%; LEFT: 15%; z-index: 1">
+			<img src = "/Images/Profilepic.png" height = "270px" width = "270px" style = "border-radius:20px; border:6px solid white">
+		</div>
+		<div class="container-fluid" ng-controller = "FAKE">
+			<ul class="nav navbar-nav" position: fixed; top: 20; width: 100%; style = "position:absolute; z-index: 1; background-color:white">
+				<li class = "active"><a href = "#" style = "position:absolute; LEFT:700px" ng-click = "getfollowing()">Following<br><b style = "font-size:20px">&nbsp&nbsp<span id = "NumberOfPeopleFollowing">0</span></b></a></li>
+				<li class = "active"><a href = "" style = "position:absolute; LEFT:600px" ng-click = "getFollowers()">Followers<br><b style = "font-size:20px">&nbsp&nbsp<span id = "NumberOfPeopleFollowers">0</span></b></a></li>
+			</ul>
+		</div>
+	</nav>
+	<div id = "BGColorGray" style = "position:absolute; width: 100%; height:1000%; background-color:#F5F8FA; border-style: solid;
+    border-width: 1px; border-color: #99CDE1">
+		<div id = "BELOWProfilePicture" style = "position:absolute; LEFT:15.5%; TOP:70px; width:300px; height:300px; border-radius:8px">
+			<p id = "USERNameBelowProfilePicture"></p>
+			&nbsp<span id = "DATEOfBirth" class="glyphicon glyphicon-gift" style = "font-size:17"></span>
+			<span id = "JoinedDate" class="glyphicon glyphicon-calendar" style = "position:absolute; LEFT:2%; TOP:25%; font-size:17"></span>
+		</div>
+		<div id = "textBox" style = "position:absolute; background-color:#99CDE1; TOP:1%; LEFT:35%; width:600px; height:200px; border-radius:10px">
+			<p style = "padding-left:20px; padding-right:20px; padding-top:20px">
+				<textarea ng-model = "TWEETTextArea" style = "resize:none" class = "form-control" type = "text" placeholder = "What's Happening?" rows="4" cols="50" maxlength = "140" ng-change = "lookForHash()"></textarea>
+				{{TWEETTextArea}}
+			</p>
+			<button href = "#" style = "position:absolute; TOP:125px; RIGHT:5%" class = "myButton" ng-click = "saveTweetInDB(TWEETTextArea)"><span class="glyphicon glyphicon-edit"></span> Tweet</button>
+		</div>
+		<div style = "position:absolute; TOP:4%; LEFT:35%">
+			<div id = "tweetBoxArea" style = "width:600px; height:150px; border-radius:10px; background-color:white; border-style: solid; border-width: 0.5px; border-color: #99CDE1" ng-repeat = "x in recvdTweets | filter:query" >	
+				<div id = "tweetBox" style = "padding-left:20px; padding-right:20px; padding-top:20px">
+					<a ng-model = "USERNameBesidePictureInTweetBox" href = "#" style = "position:absolute; LEFT:16%"><b>{{x.firstName}}</b></a>
+					<img src = "/Images/Profilepic.jpg" height = "65px" width = "68px" style = "border-radius:6px">&nbsp&nbsp{{x.tweet}}
+					<br>
+					<br>
+					<div>
+					<a href = "#" data-toggle="tooltip" data-placement="bottom" title="Reply"><span class = "glyphicon glyphicon-share-alt" style = "font-size:17px"></span></a>
+					&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+					<a href = "#" data-toggle="tooltip" data-placement="bottom" title="Retweet" ng-click = "saveTweetInDB(x.tweet)" onclick  = "this.disabled = 'disabled';"><span class = "glyphicon glyphicon-retweet" style = "font-size:17px"></span></a>
+					&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+					<a href = "#" data-toggle="tooltip" data-placement="bottom" title="Like"><span class = "glyphicon glyphicon-heart" style = "font-size:17px"></span></a>
+					&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+					<a href = "#" data-toggle="tooltip" data-placement="bottom" title="More"><span class = "glyphicon glyphicon-option-horizontal" style = "font-size:17px"></span></a>
+					</div>
+					
+				</div>
+			</div>
+		</div>
+		<div id = "AllUsers" style = "position:absolute; TOP:1%; RIGHT:15%; background-color:white; border-radius:8px; padding-left:10px; padding-right:10px; padding-top:10px; padding-bottom:10px">
+			<p id = "AllUsernamesInDB" ng-repeat = "y in recvdAllUsernamesInDB" style = "background-color:white; height:200px;width:250px; height:90px; border-radius:8px">
+				<b><a href = "#">{{y.firstName + " " + y.lastName}}</a></b><br>&nbsp&nbsp&nbsp&nbsp
+				<span style = "color:grey">{{y.username}}</span><br>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+				<button class = "myButton" ng-click = "getTheUsernameToFollow(y.username,y)" onclick  = "this.disabled = 'disabled';">
+				<span class = "glyphicon glyphicon-user">+&nbspFollow</span>
+				</button>
+			</p>
+
+		</div>
+	</div>
+	<div id="myModal" class="modal">
+		<div class="modal-content">
+			<span class="close">×</span>
+			<b style = "font-size:20px"><p id = "ShowListOfFollowersAndFollowing"></p></b>
+		</div>
+	</div>
+<script>
+	profile.controller('FAKE', function($scope,$http){
+		$scope.getFollowers = function(){
+			$http({
+				method : 'POST',
+				url : '/getFollowers'
+			}).success(function(data){
+				var followers = "";
+				var userFollowersTable = data.userFollowersTable;
+				for(var i = 0; i < data.userFollowersTable.length ; i++){
+					console.log(data.userFollowersTable[i].username);
+					followers += data.userFollowersTable[i].username + "<br />";
+				}
+				document.getElementById("ShowListOfFollowersAndFollowing").innerHTML = followers;
+				$scope.recvdFollowers = data.userFollowersTable;
+				var modal = document.getElementById('myModal');
+				modal.style.display = "block";
+				var span = document.getElementsByClassName("close")[0];
+				span.onclick = function() {
+				    modal.style.display = "none";
+				}
+
+				// When the user clicks anywhere outside of the modal, close it
+				window.onclick = function(event) {
+				    if (event.target == modal) {
+				        modal.style.display = "none";
+				    }
+				}
+				
+			});
+		};
+		$scope.getfollowing = function(){
+			$http({
+				method : 'POST',
+				url : '/getfollowing'
+			}).success(function(data){
+				var following = "";
+				var userFollowersTable = data.userFollowingTable;
+				for(var i = 0; i < data.userFollowingTable.length ; i++){
+					console.log(data.userFollowingTable[i].username);
+					following += data.userFollowingTable[i].username + "<br />";
+				}
+				var NumberOfPeopleFollowing = Number(data.userFollowingTable.length);
+				document.getElementById("NumberOfPeopleFollowing").innerHTML = NumberOfPeopleFollowing;
+				console.log("NumberOfPeopleFollowing = " + NumberOfPeopleFollowing);
+
+				document.getElementById("ShowListOfFollowersAndFollowing").innerHTML = following;
+				$scope.recvdFollowing = data.userFollowingTable;
+				var modal = document.getElementById('myModal');
+				modal.style.display = "block";
+				var span = document.getElementsByClassName("close")[0];
+				span.onclick = function() {
+				    modal.style.display = "none";
+				}
+
+				// When the user clicks anywhere outside of the modal, close it
+				window.onclick = function(event) {
+				    if (event.target == modal) {
+				        modal.style.display = "none";
+				    }
+				}
+				
+			});
+		};		
+	});
+</script>
+
+</body>
+
+</html>

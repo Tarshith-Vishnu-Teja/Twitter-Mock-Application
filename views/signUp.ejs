@@ -1,0 +1,122 @@
+<html ng-app = "twitterSignUp">
+<head>
+
+	<link rel="shortcut icon" href="http://logos-download.com/wp-content/uploads/2016/02/Twitter_logo_bird_transparent_png.png" />
+	<title>Twitter Sign Up</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+	<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+	<script src = "http://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+	<script>
+	var countOfAtSymbols = 0;
+	var date = [], month = "", year = "";
+	var twitterSignUp = angular.module('twitterSignUp', []);
+	twitterSignUp.controller('detailsCtrl', function($scope, $http){
+
+		$scope.print = function(){
+			console.log($scope.datePicker);
+			var recvDate = String($scope.datePicker);
+			console.log("date = " + recvDate);
+
+			for(var i = 4; i <= 6; i++){
+				month += recvDate[i];
+			}
+			for(i = 8; i <= 9; i++){
+				date += recvDate[i];
+			}   
+			for(var i = 11; i <= 14; i++){
+				year += recvDate[i];
+			}
+			console.log(date + "/" + month + "/" + year);
+		}
+
+		$scope.printName = function(){
+			$scope.credential = document.activeElement.value;
+			console.log($scope.credential);
+			for(var i = 0; i <= $scope.credential.length;  i++){
+				if($scope.credential[i] == ';' | $scope.credential[i] == '"' | $scope.credential[i] == '\'' | $scope.credential[i] == '/' | $scope.credential[i] == '\\' | $scope.credential[i] == '<' | $scope.credential[i] == '>' | $scope.credential[i] == '{' | $scope.credential[i] == '}' | $scope.credential[i] == ':' | $scope.credential[i] == '?'){
+					alert("Please do not enter values like >, <, {, }, /, \\, ?, ;. Enter a valid Name");
+					document.activeElement.value = "";
+				}
+			}
+		}
+
+		$scope.loadNextPage = function(){
+			for(var i = 0; i <= $scope.signUpEmail.length;  i++){
+				if($scope.signUpEmail[i] == '@'){
+					countOfAtSymbols++;
+				}
+			}
+			if(countOfAtSymbols != 1){
+				alert("Entered email is not valid. include @ properly");
+				$scope.signUpEmail = "";
+				document.getElementById("email").focus();
+			}
+			else{
+				$http({
+					method : 'POST',
+					url : '/afterSignUp',
+					data:{
+						"firstName": $scope.firstName,
+						"lastName": $scope.lastName,
+						"signUpEmail": $scope.signUpEmail,
+						"signUpPassword": $scope.signUpPassword,
+						"date": date,
+						"month": month,
+						"year": year
+					}
+				}).success(function(data){
+					console.log(data.status);
+					if(data.statusCode == "200"){
+						alert("Email Already Exists! Sign In to Continue.");
+						$scope.signUpEmail = "";
+					}
+					else
+					window.location = "/signUpSuccess"
+				});
+			}
+
+			$http({
+				method : 'POST',
+				url : '/createTablesForUser'
+			});
+		};
+
+	});
+
+	</script>
+
+</head>
+<body>
+
+	<div id = "twitterLogo" style = " width: 100%; height: 60px; background: linear-gradient(141deg, #0fb8ad 0%, #1fc8db 51%, #2cb5e8 75%); border-radius:8px">
+		<a  href = "/twitter">
+		<img hover = "opacity: 1.0; filter: alpha(opacity=50)" src = "https://g.twimg.com/dev/documentation/image/DTC_Services_1h_hero_bg.png" height = "70px" width = "75px" style = "position:absolute; LEFT:48%">
+		</a>
+	</div>
+	<a href = "/signUpSuccess" style = "color:white; position:absolute; LEFT:80%; TOP:20px; font-size:15px">Have an Account? Log in</a>
+	<img src = "/Images/twitter2.gif" style = "float:left; position:absolute; TOP:150px; LEFT:250px">
+
+	<div id = "details" ng-controller = "detailsCtrl" style = "position:absolute; TOP:200px; LEFT:38%">
+	<p style = "font-size:30px">Join Twitter Today.</p><br>
+		<input id = "firstName" type = "text" class="form-control" placeholder = "First Name" style = "width:500px; font-size:23px" ng-model = "firstName" ng-change = "printName()" value = "firstName"></input><br>
+		<br>
+		<input id = "lastName" type = "text" class="form-control" placeholder = "Last Name" style = "width:500px; font-size:23px" ng-model = "lastName" ng-change = "printName()" value = "lastName"></input>
+		<br>
+		<p><b>Date Of Birth:</b></p>
+		<input id = "DATEPicker" type="date" class = "form-control" ng-model = "datePicker" ng-change = "print()">{{datePicker}}</input><br>
+		<br>
+		<input id = "email" type = "text" class="form-control" placeholder = "example@gmail.com*" style = "width:500px; font-size:23px" ng-model = "signUpEmail" ng-change = "printName()" value = "signUpEmail" required></input><br>
+		<br>
+		<input id = "password" type = "password" class="form-control" placeholder = "Password*" style = "width:500px; font-size:23px" ng-model = "signUpPassword" ng-change = "printName()" value = "signUpPassword" required></input><br>
+		<br>
+		<p style = "color:red"><b>*Required</b></p>
+		<button class = "btn" style = "background-color:#44ccff; width:200px; font-size:20px; color:white; position:absolute; LEFT:30%" ng-click = "loadNextPage()">Sign Up</button>
+
+	</div>
+</body>
+
+
+</html>
